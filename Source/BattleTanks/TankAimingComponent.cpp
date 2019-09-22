@@ -5,7 +5,10 @@
 #include "Components/ActorComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Actor.h"
 #include "TankBarrel.h"
+#include "TankTurret.h"
+#include <algorithm>
 
 // Sets default values for this component's properties
 UTankAimingComponent::UTankAimingComponent()
@@ -17,25 +20,35 @@ UTankAimingComponent::UTankAimingComponent()
 	// ...
 }
 
-void UTankAimingComponent::AimAt(FVector TargetLocation, float LaunchSpeed)
+void UTankAimingComponent::Initialize(UTankTurret* TurretIn, UTankBarrel* BarrelIn)
 {
-	FVector LaunchVelocity;
-	if ( UGameplayStatics::SuggestProjectileVelocity(this, LaunchVelocity, Barrel->GetSocketLocation(FName("Projectile")), 
-		TargetLocation, LaunchSpeed, ESuggestProjVelocityTraceOption::DoNotTrace) ) {
-		//UE_LOG(LogTemp, Warning, TEXT("%s aiming at %s."), *GetOwner()->GetName(), *LaunchVelocity.GetSafeNormal().ToString());
-		MoveBarrel(LaunchVelocity.GetSafeNormal());
-	}
+	Turret = TurretIn;
+	Barrel = BarrelIn;
 }
 
-void UTankAimingComponent::SetBarrelReference(UTankBarrel* BarrelReference)
+void UTankAimingComponent::AimAt(FVector TargetLocation, float LaunchSpeed)
 {
-	Barrel = BarrelReference;
+	if (!ensure(Barrel && Turret)) { return; }
+	FVector LaunchVelocity;
+	if ( UGameplayStatics::SuggestProjectileVelocity(this, LaunchVelocity, Barrel->GetSocketLocation(FName("Projectile")), 
+		TargetLocation, LaunchSpeed, false, 0.f, 0.f, ESuggestProjVelocityTraceOption::DoNotTrace) ) {
+		MoveBarrel(LaunchVelocity.GetSafeNormal());
+		MoveTurret(LaunchVelocity.GetSafeNormal());
+	}
 }
 
 void UTankAimingComponent::MoveBarrel(const FVector& AimDirection)
 {
-	if (!Barrel) return;
-	FRotator RotationDifference = AimDirection.Rotation() - Barrel->GetComponentRotation();
-	Barrel->Elevate(5.f);
-	//UE_LOG(LogTemp, Warning, TEXT("Barrel rotation: %s"), *RotationDifference.ToString());
+	if (ensure(Barrel)) {
+		FRotator RotationDifference = AimDirection.Rotation() - Barrel->GetComponentRotation();
+		Barrel->Elevate(RotationDifference.Pitch);
+	}
+}
+
+void UTankAimingComponent::MoveTurret(const FVector& AimDirection)
+{
+	if (ensure(Turret)) {
+		FRotator RotationDifference = AimDirection.Rotation() - Turret->GetComponentRotation();
+		Turret->Yaw(RotationDifference.Yaw);
+	}
 }

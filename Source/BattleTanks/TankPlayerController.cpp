@@ -2,15 +2,19 @@
 
 
 #include "TankPlayerController.h"
+#include "TankAimingComponent.h"
+#include "GameFramework/Actor.h"
 
 void ATankPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
 	ControlledTank = GetControlledTank();
-	if (!ControlledTank)
+	
+	UTankAimingComponent* AimingComponent = ControlledTank->FindComponentByClass<class UTankAimingComponent>();
+	if (ensure(AimingComponent))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Tank player controller not possessing a tank!"));
+		AimingComponentFound(AimingComponent);
 	}
 }
 
@@ -29,7 +33,7 @@ ATank* ATankPlayerController::GetControlledTank() const
 
 void ATankPlayerController::AimAtCrosshair()
 {
-	if (!ControlledTank) { return; }
+	if (!ensure(ControlledTank)) { return; }
 
 	FVector HitLocation;
 	if (GetSightRayHitLocation(HitLocation)) {

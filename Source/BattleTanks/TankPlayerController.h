@@ -18,17 +18,23 @@ class BATTLETANKS_API ATankPlayerController : public APlayerController
 
 private:
 	ATank* ControlledTank = nullptr;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 		float CrosshairXLocation = 0.5;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 		float CrosshairYLocation = 0.33333;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 		float LineTraceRange = 1000000.f;
 
-	ATank* GetControlledTank() const;
 	void AimAtCrosshair();
 	bool GetSightRayHitLocation(FVector&) const;
 	FVector2D GetCrosshairScreenLocation() const;
+
+protected:
+	UFUNCTION(BlueprintCallable, Category = "Setup")
+		ATank* GetControlledTank() const;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Setup")
+		void AimingComponentFound(class UTankAimingComponent* AimingComponent);
 
 public:
 	virtual void BeginPlay() override;
