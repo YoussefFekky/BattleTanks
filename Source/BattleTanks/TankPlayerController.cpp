@@ -4,14 +4,14 @@
 #include "TankPlayerController.h"
 #include "TankAimingComponent.h"
 #include "GameFramework/Actor.h"
+#include "Engine/World.h"
+
 
 void ATankPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
-	ControlledTank = GetControlledTank();
 	
-	UTankAimingComponent* AimingComponent = ControlledTank->FindComponentByClass<class UTankAimingComponent>();
+	AimingComponent = GetPawn()->FindComponentByClass<UTankAimingComponent>();
 	if (ensure(AimingComponent))
 	{
 		AimingComponentFound(AimingComponent);
@@ -26,18 +26,13 @@ void ATankPlayerController::Tick(float DeltaTime)
 
 }
 
-ATank* ATankPlayerController::GetControlledTank() const
-{
-	return Cast<ATank>(GetPawn());
-}
-
 void ATankPlayerController::AimAtCrosshair()
 {
-	if (!ensure(ControlledTank)) { return; }
-
 	FVector HitLocation;
 	if (GetSightRayHitLocation(HitLocation)) {
-		ControlledTank->AimAt(HitLocation);
+		if (ensure(AimingComponent)) {
+			AimingComponent->AimAt(HitLocation);
+		}
 	}
 }
 
@@ -48,7 +43,7 @@ bool ATankPlayerController::GetSightRayHitLocation(FVector& OutHitLocation) cons
 	FVector WorldLocation, WorldDirection;
 	if (DeprojectScreenPositionToWorld(CrosshairLocation.X, CrosshairLocation.Y, WorldLocation, WorldDirection)) {
 		if (GetWorld()->LineTraceSingleByChannel(HitResult, PlayerCameraManager->GetCameraLocation(),
-			ControlledTank->GetActorLocation() + LineTraceRange * WorldDirection,
+			GetPawn()->GetActorLocation() + LineTraceRange * WorldDirection,
 			ECC_Visibility)) {
 			OutHitLocation = HitResult.Location;
 			return true;

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
-#include "Tank.h"
 #include "TankAIController.generated.h"
 
 /**
@@ -20,8 +19,7 @@ class BATTLETANKS_API ATankAIController : public AAIController
 	virtual void Tick(float) override;
 
 private:
-	
-	ATank* ControlledTank = nullptr;
-	ATank* PlayerTank = nullptr;
-	float AcceptanceRadius = 0.f;
+	class UTankAimingComponent* AimingComponent = nullptr;
+	APawn* PlayerTank = nullptr;
+	float AcceptanceRadius = 300.f;
 };
