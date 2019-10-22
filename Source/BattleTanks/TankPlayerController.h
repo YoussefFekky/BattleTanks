@@ -26,17 +26,21 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 		float LineTraceRange = 1000000.f;
 
+	virtual void BeginPlay() override;
+
+	virtual void Tick(float) override;
+
+	virtual void SetPawn(APawn* InPawn) override;
+
 	void AimAtCrosshair();
 	bool GetSightRayHitLocation(FVector&) const;
 	FVector2D GetCrosshairScreenLocation() const;
 
+	UFUNCTION()
+	void OnTankDeath();
+
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Setup")
 		void AimingComponentFound(class UTankAimingComponent* AimingComponent);
-
-public:
-	virtual void BeginPlay() override;
-
-	virtual void Tick(float) override;
 
 };

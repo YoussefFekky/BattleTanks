@@ -3,6 +3,8 @@
 
 #include "TankAIController.h"
 #include "TankAimingComponent.h"
+#include "Tank.h"
+#include "GameFramework/Pawn.h"
 #include "Engine/World.h"
 
 void ATankAIController::BeginPlay()
@@ -17,9 +19,28 @@ void ATankAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (ensure(AimingComponent && PlayerTank)) {
+	if (AimingComponent && PlayerTank) {
 		MoveToActor(PlayerTank, AcceptanceRadius);
 		AimingComponent->AimAt(PlayerTank->GetActorLocation());
-		AimingComponent->Fire();
+		if(AimingComponent->GetFiringState() == EFiringState::Locked)
+			AimingComponent->Fire();
 	}
+}
+
+void ATankAIController::SetPawn(APawn* InPawn)
+{
+	Super::SetPawn(InPawn);
+
+	if (InPawn)
+	{
+		PossessedTank = Cast<ATank>(InPawn);
+		if (!PossessedTank) return;
+		PossessedTank->OnDeath.AddUniqueDynamic(this, &ATankAIController::OnTankDeath);
+	}
+}
+
+void ATankAIController::OnTankDeath()
+{
+	if(ensure(PossessedTank))
+		PossessedTank->DetachFromControllerPendingDestroy();
 }

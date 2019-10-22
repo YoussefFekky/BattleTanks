@@ -13,13 +13,21 @@ UCLASS()
 class BATTLETANKS_API ATankAIController : public AAIController
 {
 	GENERATED_BODY()
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Setup")
+	float AcceptanceRadius = 80000.f;
+
+private:
+	class UTankAimingComponent* AimingComponent = nullptr;
+	class ATank* PossessedTank = nullptr;
+	APawn* PlayerTank = nullptr;
 
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float) override;
 
-private:
-	class UTankAimingComponent* AimingComponent = nullptr;
-	APawn* PlayerTank = nullptr;
-	float AcceptanceRadius = 300.f;
+	virtual void SetPawn(APawn* InPawn) override;
+
+	UFUNCTION()
+	void OnTankDeath();
 };

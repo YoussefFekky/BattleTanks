@@ -3,6 +3,7 @@
 
 #include "TankPlayerController.h"
 #include "TankAimingComponent.h"
+#include "Tank.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 
@@ -26,25 +27,36 @@ void ATankPlayerController::Tick(float DeltaTime)
 
 }
 
+void ATankPlayerController::SetPawn(APawn* InPawn)
+{
+	Super::SetPawn(InPawn);
+
+	if (InPawn)
+	{
+		ATank* PossessedTank = Cast<ATank>(InPawn);
+		if (!ensure(PossessedTank)) return;
+		PossessedTank->OnDeath.AddUniqueDynamic(this, &ATankPlayerController::OnTankDeath);
+	}
+}
+
 void ATankPlayerController::AimAtCrosshair()
 {
 	FVector HitLocation;
-	if (GetSightRayHitLocation(HitLocation)) {
-		if (ensure(AimingComponent)) {
-			AimingComponent->AimAt(HitLocation);
-		}
+	if (ensure(AimingComponent) && GetSightRayHitLocation(HitLocation)) {
+		AimingComponent->AimAt(HitLocation);
 	}
 }
 
 bool ATankPlayerController::GetSightRayHitLocation(FVector& OutHitLocation) const
 {
+	if (!GetPawn()) return false;
 	FHitResult HitResult;
 	FVector2D CrosshairLocation = GetCrosshairScreenLocation();
 	FVector WorldLocation, WorldDirection;
 	if (DeprojectScreenPositionToWorld(CrosshairLocation.X, CrosshairLocation.Y, WorldLocation, WorldDirection)) {
 		if (GetWorld()->LineTraceSingleByChannel(HitResult, PlayerCameraManager->GetCameraLocation(),
 			GetPawn()->GetActorLocation() + LineTraceRange * WorldDirection,
-			ECC_Visibility)) {
+			ECC_Camera)) {
 			OutHitLocation = HitResult.Location;
 			return true;
 		}
@@ -61,5 +73,10 @@ FVector2D ATankPlayerController::GetCrosshairScreenLocation() const
 	GetViewportSize(ViewportXSize, ViewportYSize);
 	FVector2D CrosshairLocation(ViewportXSize * CrosshairXLocation, ViewportYSize * CrosshairYLocation);
 	return CrosshairLocation;
+}
+
+void ATankPlayerController::OnTankDeath()
+{
+	StartSpectatingOnly();
 }
 

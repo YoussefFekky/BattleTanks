@@ -2,46 +2,41 @@
 
 
 #include "TankTrack.h"
+#include "SprungWheel.h"
+#include "SpawnPoint.h"
 
 UTankTrack::UTankTrack()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UTankTrack::BeginPlay()
+TArray<class ASprungWheel*> UTankTrack::GetWheels() const
 {
-	Super::BeginPlay();
-
-	OnComponentHit.AddDynamic(this, &UTankTrack::OnHit);
-}
-
-void UTankTrack::DriveTrack()
-{
-	FVector AppliedForce = GetForwardVector() * CurrentThrottle * MaxDrivingForce;
-	UPrimitiveComponent* RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
-	RootComponent->AddForceAtLocation(AppliedForce, GetComponentLocation());
+	TArray<USceneComponent*> Children;
+	GetChildrenComponents(true, Children);
+	TArray<ASprungWheel*> SprungWheels;
+	for (USceneComponent* Child : Children) {
+		USpawnPoint* SpawnPointChild = Cast<USpawnPoint>(Child);
+		if (!SpawnPointChild) continue;
+		AActor* SpawnedActor = SpawnPointChild->GetSpawnedActor();
+		ASprungWheel* SprungWheel = Cast<ASprungWheel>(SpawnedActor);
+		if (!ensure(SprungWheel)) continue;
+		SprungWheels.Add(SprungWheel);
+	}
+	return SprungWheels;
 }
 
 void UTankTrack::SetThrottle(float Throttle)
 {
-	CurrentThrottle = FMath::Clamp<float>(CurrentThrottle + Throttle, -1.f, 1.f);
-	DriveTrack();
+	Throttle = FMath::Clamp<float>(Throttle, -1.f, 1.f);
+	DriveTrack(Throttle);
 }
 
-void UTankTrack::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+void UTankTrack::DriveTrack(float Throttle)
 {
-	DriveTrack();
-	ApplySidewaysForce();
-	CurrentThrottle = 0.f;
-}
-
-void UTankTrack::ApplySidewaysForce()
-{
-	float SlippageSpeed = FVector::DotProduct(GetComponentVelocity(), GetRightVector());
-
-	FVector CorrectionAcceleration = -SlippageSpeed / GetWorld()->GetDeltaSeconds() * GetRightVector();
-	UStaticMeshComponent* TankRoot = Cast<UStaticMeshComponent>(GetOwner()->GetRootComponent());
-	FVector CorrectionForce = TankRoot->GetMass() * CorrectionAcceleration / 2;
-
-	TankRoot->AddForce(CorrectionForce);
+	TArray<ASprungWheel*> Wheels = GetWheels();
+	float AppliedForcePerWheel = Throttle * MaxDrivingForce / Wheels.Num();
+	for (ASprungWheel* Wheel : Wheels) {
+		Wheel->AddDrivingForce(AppliedForcePerWheel);
+	}
 }
